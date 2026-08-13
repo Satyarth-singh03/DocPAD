@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { api } from '../../services/api';
+import { calculateAgeFromDOB } from '../common/SettingsModal';
 import { User, Calendar, Phone, Mail, FileText, Activity } from 'lucide-react';
 
 export const AddPatientModal = ({ isOpen, onClose, onPatientAdded }) => {
   const [formData, setFormData] = useState({
     patient_id: `PT-${Math.floor(100 + Math.random() * 900)}-${Math.floor(10 + Math.random() * 90)}`,
     name: '',
-    age: '',
+    dob: '1995-04-10',
     gender: 'Male',
     contact: '',
     email: '',
@@ -22,13 +23,18 @@ export const AddPatientModal = ({ isOpen, onClose, onPatientAdded }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const computedAge = calculateAgeFromDOB(formData.dob);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      const res = await api.createPatient(formData);
+      const res = await api.createPatient({
+        ...formData,
+        age: computedAge
+      });
       if (res.success) {
         onPatientAdded(res.patient);
         onClose();
@@ -60,7 +66,7 @@ export const AddPatientModal = ({ isOpen, onClose, onPatientAdded }) => {
               required
               value={formData.patient_id}
               onChange={handleChange}
-              placeholder="e.g. PT-123-45"
+              placeholder="e.g. PT-101-01"
               className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md font-mono focus:border-black focus:ring-1 focus:ring-black"
             />
           </div>
@@ -82,19 +88,25 @@ export const AddPatientModal = ({ isOpen, onClose, onPatientAdded }) => {
 
           <div>
             <label className="block text-xs font-bold text-black uppercase mb-1">
-              Age <span className="text-red-500">*</span>
+              Date of Birth (DOB) <span className="text-red-500">*</span>
             </label>
             <input
-              type="number"
-              name="age"
+              type="date"
+              name="dob"
               required
-              min="0"
-              max="130"
-              value={formData.age}
+              value={formData.dob}
               onChange={handleChange}
-              placeholder="e.g. 35"
-              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:border-black focus:ring-1 focus:ring-black"
+              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md font-mono focus:border-black focus:ring-1 focus:ring-black"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-black uppercase mb-1">
+              Calculated Age
+            </label>
+            <div className="px-3 py-2 text-sm bg-gray-100 border border-gray-300 rounded-md font-bold text-black font-mono">
+              {computedAge !== null ? `${computedAge} Years Old` : 'Select DOB'}
+            </div>
           </div>
 
           <div>
@@ -124,19 +136,7 @@ export const AddPatientModal = ({ isOpen, onClose, onPatientAdded }) => {
               value={formData.contact}
               onChange={handleChange}
               placeholder="e.g. +1 555-0199"
-              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:border-black focus:ring-1 focus:ring-black"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-black uppercase mb-1">Email Address</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="e.g. patient@docpad.in"
-              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:border-black focus:ring-1 focus:ring-black"
+              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md font-mono focus:border-black focus:ring-1 focus:ring-black"
             />
           </div>
         </div>

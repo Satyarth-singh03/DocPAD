@@ -2,6 +2,20 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../config/supabase.js';
 
+// Helper to calculate age from Date of Birth dynamically
+export const calculateAgeFromDOB = (dobString) => {
+  if (!dobString) return null;
+  const birthDate = new Date(dobString);
+  if (isNaN(birthDate.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age >= 0 ? age : 0;
+};
+
 // Pre-seeded Demo Data for Instant Execution
 const mockDb = {
   users: [
@@ -12,6 +26,7 @@ const mockDb = {
       name: 'Dr. Admin User',
       role: 'admin',
       phone: '+1 555-0100',
+      dob: '1980-01-15',
       department: 'Hospital Administration',
       created_at: new Date('2026-01-01').toISOString()
     },
@@ -22,6 +37,7 @@ const mockDb = {
       name: 'Dr. Robert Chen, MD',
       role: 'doctor',
       phone: '+1 555-0101',
+      dob: '1978-04-12',
       department: 'Cardiology',
       created_at: new Date('2026-01-02').toISOString()
     },
@@ -32,6 +48,7 @@ const mockDb = {
       name: 'Dr. Sarah Jenkins, MD',
       role: 'doctor',
       phone: '+1 555-0102',
+      dob: '1985-09-24',
       department: 'Neurology',
       created_at: new Date('2026-01-03').toISOString()
     },
@@ -42,6 +59,7 @@ const mockDb = {
       name: 'Nurse Emily Adams, RN',
       role: 'nurse',
       phone: '+1 555-0103',
+      dob: '1992-11-05',
       department: 'Emergency & Triage',
       created_at: new Date('2026-01-04').toISOString()
     },
@@ -51,8 +69,9 @@ const mockDb = {
       password: bcrypt.hashSync('password123', 10),
       name: 'John Doe',
       role: 'patient',
-      patient_id: 'pati123',
+      patient_id: 'PT-101-01',
       phone: '+1 555-0199',
+      dob: '1981-05-15',
       created_at: new Date('2026-01-10').toISOString()
     },
     {
@@ -63,14 +82,16 @@ const mockDb = {
       role: 'patient',
       patient_id: 'PT-987-12',
       phone: '+1 555-0198',
+      dob: '1994-08-20',
       created_at: new Date('2026-01-12').toISOString()
     }
   ],
   patients: [
     {
       id: 'p-001',
-      patient_id: 'pati123',
+      patient_id: 'PT-101-01',
       name: 'John Doe',
+      dob: '1981-05-15',
       age: 45,
       gender: 'Male',
       contact: '+1 555-0199',
@@ -87,6 +108,7 @@ const mockDb = {
       id: 'p-002',
       patient_id: 'PT-987-12',
       name: 'Eleanor Vance',
+      dob: '1994-08-20',
       age: 32,
       gender: 'Female',
       contact: '+1 555-0198',
@@ -103,6 +125,7 @@ const mockDb = {
       id: 'p-003',
       patient_id: 'PT-456-78',
       name: 'Michael Scott',
+      dob: '1976-03-15',
       age: 50,
       gender: 'Male',
       contact: '+1 555-0197',
@@ -238,7 +261,7 @@ const mockDb = {
       action: 'SYSTEM_INITIALIZATION',
       resource_type: 'system',
       resource_id: 'sys-01',
-      details: { note: 'AI DOCPAD medical management initialized with default demo dataset' },
+      details: { note: 'DocPad medical management initialized with default demo dataset' },
       created_at: new Date().toISOString()
     }
   ]
@@ -249,10 +272,11 @@ export const DbService = {
   async getUserByEmailOrPatientId(identifier) {
     const term = identifier.trim().toLowerCase();
     
-    // Check mock data first
+    // Check mock data (also alias 'pati123' to John Doe's PT-101-01 for backward compatibility)
     let user = mockDb.users.find(u => 
       u.email.toLowerCase() === term || 
-      (u.patient_id && u.patient_id.toLowerCase() === term)
+      (u.patient_id && u.patient_id.toLowerCase() === term) ||
+      (term === 'pati123' && u.patient_id === 'PT-101-01')
     );
 
     if (user) return user;
@@ -308,6 +332,38 @@ export const DbService = {
     return newUser;
   },
 
+  async updateUser(id, updateData) {
+    const idx = mockDb.users.findIndex(u => u.id === id);
+    if (idx === -1) throw new Error('User account not found');
+
+    const updated = {
+      ...mockDb.users[idx],
+      ...updateData
+    };
+
+    // Calculate dynamic age if dob is provided
+    if (updateData.dob) {
+      updated.age = calculateAgeFromDOB(updateData.dob);
+    }
+
+    mockDb.users[idx] = updated;
+
+    // If user is a patient, also update patient record
+    if (updated.patient_id) {
+      const pIdx = mockDb.patients.findIndex(p => p.patient_id === updated.patient_id || p.id === updated.id);
+      if (pIdx !== -1) {
+        mockDb.patients[pIdx].name = updated.name;
+        mockDb.patients[pIdx].contact = updated.phone || mockDb.patients[pIdx].contact;
+        if (updated.dob) {
+          mockDb.patients[pIdx].dob = updated.dob;
+          mockDb.patients[pIdx].age = calculateAgeFromDOB(updated.dob);
+        }
+      }
+    }
+
+    return updated;
+  },
+
   // --- PATIENTS ---
   async getPatients({ search, role, patientId }) {
     let list = [...mockDb.patients];
@@ -318,7 +374,7 @@ export const DbService = {
     }
 
     if (patientId) {
-      list = list.filter(p => p.patient_id === patientId || p.id === patientId);
+      list = list.filter(p => p.patient_id === patientId || p.id === patientId || (patientId === 'pati123' && p.patient_id === 'PT-101-01'));
     } else if (search) {
       const s = search.trim().toLowerCase();
       list = list.filter(p => 
@@ -328,12 +384,21 @@ export const DbService = {
       );
     }
 
-    return list;
+    // Ensure all patients have dynamically calculated age if DOB exists
+    return list.map(p => ({
+      ...p,
+      age: p.dob ? calculateAgeFromDOB(p.dob) : p.age
+    }));
   },
 
   async getPatientById(id) {
-    const patient = mockDb.patients.find(p => p.id === id || p.patient_id === id);
-    if (patient) return patient;
+    const patient = mockDb.patients.find(p => p.id === id || p.patient_id === id || (id === 'pati123' && p.patient_id === 'PT-101-01'));
+    if (patient) {
+      return {
+        ...patient,
+        age: patient.dob ? calculateAgeFromDOB(patient.dob) : patient.age
+      };
+    }
     if (supabase) {
       const { data } = await supabase.from('patients').select('*').or(`id.eq.${id},patient_id.eq.${id}`).maybeSingle();
       return data;
@@ -342,20 +407,29 @@ export const DbService = {
   },
 
   async createPatient(patientData, createdByUserId) {
-    // Check patient ID uniqueness
-    const exists = mockDb.patients.some(p => p.patient_id.toLowerCase() === patientData.patient_id.toLowerCase());
-    if (exists) {
-      throw new Error(`Patient ID '${patientData.patient_id}' already exists.`);
+    // Generate normalized PT-XXX-XX ID format automatically if not provided or custom
+    let normPatientId = patientData.patient_id;
+    if (!normPatientId || !normPatientId.startsWith('PT-')) {
+      normPatientId = `PT-${Math.floor(100 + Math.random() * 900)}-${Math.floor(10 + Math.random() * 90)}`;
     }
+
+    // Check patient ID uniqueness
+    const exists = mockDb.patients.some(p => p.patient_id.toLowerCase() === normPatientId.toLowerCase());
+    if (exists) {
+      throw new Error(`Patient ID '${normPatientId}' already exists.`);
+    }
+
+    const calculatedAge = patientData.dob ? calculateAgeFromDOB(patientData.dob) : Number(patientData.age || 30);
 
     const newPatient = {
       id: `p-${uuidv4().slice(0, 8)}`,
-      patient_id: patientData.patient_id,
+      patient_id: normPatientId,
       name: patientData.name,
-      age: Number(patientData.age),
+      dob: patientData.dob || '1995-01-01',
+      age: calculatedAge,
       gender: patientData.gender,
       contact: patientData.contact,
-      email: patientData.email || `${patientData.patient_id.toLowerCase()}@docpad.in`,
+      email: patientData.email || `${normPatientId.toLowerCase()}@docpad.in`,
       reason_for_visit: patientData.reason_for_visit,
       disease: patientData.disease || 'Initial Evaluation',
       last_visit: patientData.last_visit || new Date().toISOString().split('T')[0],
@@ -367,7 +441,7 @@ export const DbService = {
 
     mockDb.patients.unshift(newPatient);
 
-    // Also auto-create patient account user profile so patient can log in!
+    // Auto-create patient user profile for login
     const patientAccount = {
       id: `usr-${newPatient.id}`,
       email: newPatient.email,
@@ -376,6 +450,7 @@ export const DbService = {
       role: 'patient',
       patient_id: newPatient.patient_id,
       phone: newPatient.contact,
+      dob: newPatient.dob,
       created_at: new Date().toISOString()
     };
     mockDb.users.push(patientAccount);
@@ -396,11 +471,17 @@ export const DbService = {
     const idx = mockDb.patients.findIndex(p => p.id === id || p.patient_id === id);
     if (idx === -1) throw new Error('Patient not found');
 
-    mockDb.patients[idx] = {
+    const updated = {
       ...mockDb.patients[idx],
       ...updateData,
       updated_at: new Date().toISOString()
     };
+
+    if (updateData.dob) {
+      updated.age = calculateAgeFromDOB(updateData.dob);
+    }
+
+    mockDb.patients[idx] = updated;
 
     if (supabase) {
       try {
@@ -457,7 +538,7 @@ export const DbService = {
   // --- DOCTOR NOTES ---
   async getNotesByPatientId(patientId) {
     return mockDb.doctor_notes
-      .filter(n => n.patient_id === patientId)
+      .filter(n => n.patient_id === patientId || patientId === 'pati123' && n.patient_id === 'p-001')
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   },
 
@@ -498,7 +579,7 @@ export const DbService = {
   // --- REPORTS ---
   async getReportsByPatientId(patientId) {
     return mockDb.reports
-      .filter(r => r.patient_id === patientId)
+      .filter(r => r.patient_id === patientId || patientId === 'pati123' && r.patient_id === 'p-001')
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   },
 
@@ -534,7 +615,7 @@ export const DbService = {
   // --- PRESCRIPTIONS ---
   async getPrescriptionsByPatientId(patientId) {
     return mockDb.prescriptions
-      .filter(p => p.patient_id === patientId)
+      .filter(p => p.patient_id === patientId || patientId === 'pati123' && p.patient_id === 'p-001')
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   },
 
@@ -577,7 +658,7 @@ export const DbService = {
 
   // --- MEDICAL RECORDS ---
   async getMedicalRecordsByPatientId(patientId) {
-    return mockDb.medical_records.filter(m => m.patient_id === patientId);
+    return mockDb.medical_records.filter(m => m.patient_id === patientId || patientId === 'pati123' && m.patient_id === 'p-001');
   },
 
   async createMedicalRecord(recordData) {
@@ -592,7 +673,7 @@ export const DbService = {
 
   // --- AI SUMMARIES ---
   async getAiSummaryByPatientId(patientId) {
-    return mockDb.ai_summaries.find(s => s.patient_id === patientId) || null;
+    return mockDb.ai_summaries.find(s => s.patient_id === patientId || patientId === 'pati123' && s.patient_id === 'p-001') || null;
   },
 
   async saveAiSummary(patientId, summaryData) {

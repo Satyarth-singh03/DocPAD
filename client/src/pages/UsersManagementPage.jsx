@@ -1,24 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, Plus, UserPlus, Shield, Search, Mail, Phone } from 'lucide-react';
+import { UserCheck, UserPlus, Search, Edit2 } from 'lucide-react';
 import { api } from '../services/api';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { UserDetailModal } from '../components/common/UserDetailModal';
+import { AddStaffModal } from '../components/common/AddStaffModal';
 
 export const UsersManagementPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: 'password123',
-    role: 'doctor',
-    phone: '',
-    department: 'Cardiology'
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -36,36 +30,15 @@ export const UsersManagementPage = () => {
     fetchUsers();
   }, []);
 
-  const handleAddUser = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setSubmitting(true);
-
-    try {
-      const res = await api.createUser(formData);
-      if (res.success) {
-        setShowAddModal(false);
-        setFormData({
-          name: '',
-          email: '',
-          password: 'password123',
-          role: 'doctor',
-          phone: '',
-          department: 'Cardiology'
-        });
-        fetchUsers();
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to create user account');
-    } finally {
-      setSubmitting(false);
-    }
+  const handleUserClick = (userItem) => {
+    setSelectedUser(userItem);
+    setShowDetailModal(true);
   };
 
-  if (loading) return <LoadingSpinner label="Loading Hospital Staff & Users..." />;
+  if (loading) return <LoadingSpinner label="Loading Hospital Users Directory..." />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
         <div>
@@ -78,7 +51,7 @@ export const UsersManagementPage = () => {
           className="px-4 py-2 text-xs font-bold text-white bg-black rounded-md hover:bg-gray-800 transition-colors flex items-center gap-1.5 shadow-2xs"
         >
           <UserPlus className="w-4 h-4" />
-          + Add Staff Member (Doctor/Nurse)
+          + Add Staff Member
         </button>
       </div>
 
@@ -93,20 +66,24 @@ export const UsersManagementPage = () => {
                 <th className="px-4 py-3">Assigned Role</th>
                 <th className="px-4 py-3">Department / Specialization</th>
                 <th className="px-4 py-3">Contact</th>
-                <th className="px-4 py-3 text-right">Created Date</th>
+                <th className="px-4 py-3 text-right font-mono">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 font-medium">
               {users.map((u) => (
-                <tr key={u.id} className="hover:bg-sky-50/50 transition-colors">
-                  <td className="px-4 py-3 font-bold text-black flex items-center gap-2">
+                <tr 
+                  key={u.id} 
+                  onClick={() => handleUserClick(u)}
+                  className="hover:bg-sky-50/60 transition-colors cursor-pointer group"
+                >
+                  <td className="px-4 py-3 font-bold text-black group-hover:text-sky-900 flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-sky-100 text-sky-900 flex items-center justify-center text-xs font-bold border border-sky-200">
                       {u.name.charAt(0)}
                     </div>
                     <span>{u.name}</span>
                   </td>
                   <td className="px-4 py-3 text-xs font-mono font-semibold text-gray-800">
-                    {u.email}
+                    {u.patient_id || u.email}
                   </td>
                   <td className="px-4 py-3">
                     <Badge role={u.role}>{u.role}</Badge>
@@ -117,8 +94,14 @@ export const UsersManagementPage = () => {
                   <td className="px-4 py-3 text-xs text-gray-600 font-mono">
                     {u.phone || 'N/A'}
                   </td>
-                  <td className="px-4 py-3 text-right text-xs text-gray-500 font-mono">
-                    {new Date(u.created_at || Date.now()).toLocaleDateString()}
+                  <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => handleUserClick(u)}
+                      className="px-3 py-1 text-xs font-bold text-black bg-gray-100 hover:bg-black hover:text-white rounded transition-colors flex items-center gap-1 ml-auto"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      View & Edit
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -127,93 +110,20 @@ export const UsersManagementPage = () => {
         </div>
       </div>
 
-      {/* Add User Modal */}
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Register New Staff Account">
-        <form onSubmit={handleAddUser} className="space-y-4">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-md font-medium">
-              {error}
-            </div>
-          )}
+      {/* Add Staff Modal */}
+      <AddStaffModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onStaffCreated={() => fetchUsers()}
+      />
 
-          <div>
-            <label className="block text-xs font-bold text-black uppercase mb-1">Account Role *</label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:border-black"
-            >
-              <option value="doctor">Doctor</option>
-              <option value="nurse">Nurse</option>
-              <option value="admin">Administrator</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-black uppercase mb-1">Full Name *</label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g. Dr. Robert Chen, MD"
-              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:border-black"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-black uppercase mb-1">Email Address *</label>
-            <input
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="e.g. doc345@docpad.in"
-              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md font-mono focus:border-black"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-black uppercase mb-1">Initial Password *</label>
-            <input
-              type="password"
-              required
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              placeholder="••••••••"
-              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:border-black"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-black uppercase mb-1">Department / Specialty</label>
-            <input
-              type="text"
-              value={formData.department}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              placeholder="e.g. Cardiology, Emergency, Pediatrics"
-              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:border-black"
-            />
-          </div>
-
-          <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setShowAddModal(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-5 py-2 text-sm font-bold text-white bg-black rounded-md hover:bg-gray-800"
-            >
-              {submitting ? 'Creating User...' : 'Create Account'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+      {/* User Detail & Edit Modal */}
+      <UserDetailModal
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        user={selectedUser}
+        onUserUpdated={() => fetchUsers()}
+      />
     </div>
   );
 };

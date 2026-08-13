@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Stethoscope, Plus, Search, Users, Activity, FileText, Pill } from 'lucide-react';
+import { Stethoscope, Plus, Search, Users } from 'lucide-react';
 import { api } from '../../services/api';
 import { SearchBar } from '../common/SearchBar';
 import { PatientTable } from '../patient/PatientTable';
@@ -25,10 +25,10 @@ export const DoctorDashboard = ({ onSelectPatient, onOpenAddPatient }) => {
     fetchPatients();
   }, []);
 
-  if (loading) return <LoadingSpinner label="Loading Doctor Clinical Workspace..." />;
+  if (loading) return <LoadingSpinner label="Loading Doctor Dashboard..." />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-7xl mx-auto">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-sky-50 border border-sky-200 rounded-lg p-5">
         <div>
@@ -54,15 +54,15 @@ export const DoctorDashboard = ({ onSelectPatient, onOpenAddPatient }) => {
           <Search className="w-4 h-4 text-sky-800" />
           Quick Patient Record Lookup
         </h3>
-        <p className="text-xs text-gray-600">Type Patient ID (e.g. PT-123-43, pati123) or Patient Name to instantly open profile.</p>
+        <p className="text-xs text-gray-600">Type Patient ID (e.g. PT-101-01) or Patient Name to instantly open profile.</p>
         <SearchBar onSelectPatient={onSelectPatient} />
       </div>
 
-      {/* Active Patients Directory */}
+      {/* Active Patients Directory (Full Width) */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-black">My Active Patients Directory</h3>
-          <span className="text-xs font-mono text-gray-500">{patients.length} Assigned Records</span>
+          <h3 className="text-base font-bold text-black">Active Patients Directory</h3>
+          <span className="text-xs font-mono text-gray-500">{patients.length} Registered Patients</span>
         </div>
 
         <PatientTable

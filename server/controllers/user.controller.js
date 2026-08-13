@@ -12,6 +12,8 @@ export const getUsers = async (req, res, next) => {
       role: u.role,
       patient_id: u.patient_id || null,
       phone: u.phone || null,
+      dob: u.dob || null,
+      age: u.age || null,
       department: u.department || null,
       created_at: u.created_at
     }));
@@ -19,6 +21,35 @@ export const getUsers = async (req, res, next) => {
     res.status(200).json({
       success: true,
       users: sanitized
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getUserById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await DbService.getUserById(id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        patient_id: user.patient_id || null,
+        phone: user.phone || null,
+        dob: user.dob || null,
+        age: user.age || null,
+        department: user.department || null,
+        created_at: user.created_at
+      }
     });
   } catch (err) {
     next(err);
@@ -60,6 +91,41 @@ export const createUser = async (req, res, next) => {
     if (err.name === 'ZodError') {
       return res.status(400).json({ success: false, message: err.errors[0].message });
     }
+    next(err);
+  }
+};
+
+export const updateUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updated = await DbService.updateUser(id, req.body);
+
+    await DbService.logAudit({
+      user_id: req.user.id,
+      user_email: req.user.email,
+      user_role: req.user.role,
+      action: 'USER_ACCOUNT_UPDATED',
+      resource_type: 'user',
+      resource_id: id,
+      details: req.body
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'User information updated successfully.',
+      user: {
+        id: updated.id,
+        email: updated.email,
+        name: updated.name,
+        role: updated.role,
+        patient_id: updated.patient_id || null,
+        phone: updated.phone || null,
+        dob: updated.dob || null,
+        age: updated.age || null,
+        department: updated.department || null
+      }
+    });
+  } catch (err) {
     next(err);
   }
 };

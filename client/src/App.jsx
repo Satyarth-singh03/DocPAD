@@ -10,7 +10,7 @@ const MainApp = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <LoadingSpinner label="Initializing AI DOCPAD Healthcare System..." size="lg" />
+        <LoadingSpinner label="Initializing DocPad..." size="lg" />
       </div>
     );
   }

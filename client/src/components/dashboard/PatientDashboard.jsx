@@ -21,7 +21,6 @@ export const PatientDashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      // Find patient ID associated with user account
       const pid = user?.patient_id || user?.id;
       const res = await api.getPatientById(pid);
       if (res.success) {
@@ -40,30 +39,30 @@ export const PatientDashboard = () => {
     }
   }, [user]);
 
-  if (loading) return <LoadingSpinner label="Loading Your Personal Health Record..." />;
+  if (loading) return <LoadingSpinner label="Loading Your Medical Dashboard..." />;
 
   if (error || !patient) {
     return (
-      <div className="p-8 text-center bg-white border border-gray-200 rounded-lg space-y-4">
+      <div className="p-8 text-center bg-white border border-gray-200 rounded-lg space-y-4 max-w-7xl mx-auto">
         <p className="text-sm font-semibold text-red-600">{error || 'Personal medical record not found.'}</p>
-        <p className="text-xs text-gray-500">Please contact clinic support to link your Patient ID.</p>
+        <p className="text-xs text-gray-500">Please contact clinic administration to link your Patient ID.</p>
       </div>
     );
   }
 
   const tabs = [
-    { id: 'overview', label: 'My Profile Overview', icon: Activity },
+    { id: 'overview', label: 'Overview', icon: Activity },
     { id: 'history', label: 'Medical History', icon: User },
     { id: 'reports', label: `My Reports (${patient.reports?.length || 0})`, icon: FileText },
     { id: 'prescriptions', label: `My Prescriptions (${patient.prescriptions?.length || 0})`, icon: Pill },
     { id: 'notes', label: `Doctor Notes (${patient.notes?.length || 0})`, icon: MessageSquare },
-    { id: 'ai-summary', label: 'AI Patient Summary', icon: Sparkles }
+    { id: 'ai-summary', label: 'AI Summary', icon: Sparkles }
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-7xl mx-auto">
       {/* Patient Header Banner */}
-      <div className="bg-sky-50 border border-sky-200 rounded-lg p-6 space-y-3">
+      <div className="bg-sky-50 border border-sky-200 rounded-lg p-6 space-y-3 shadow-2xs">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-white text-black border-2 border-sky-300 flex items-center justify-center font-bold text-xl">
@@ -86,7 +85,7 @@ export const PatientDashboard = () => {
             <ShieldCheck className="w-4 h-4 text-sky-800" />
             <div>
               <span className="font-bold text-black block">Protected Health Record</span>
-              <span className="text-[10px] text-gray-600">Read-Only Patient View Access</span>
+              <span className="text-[10px] text-gray-600">Read-Only Patient View</span>
             </div>
           </div>
         </div>
@@ -103,7 +102,7 @@ export const PatientDashboard = () => {
         </div>
       </div>
 
-      {/* Tabs Menu */}
+      {/* Tabs Menu & Content Container (Full Width) */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-2xs">
         <div className="flex overflow-x-auto border-b border-gray-200 gap-1 p-2">
           {tabs.map((tab) => {

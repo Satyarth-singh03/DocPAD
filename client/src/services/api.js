@@ -35,9 +35,10 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
-  // Auth
+  // Auth & Settings Profile
   login: (credentials) => request('/auth/login', { method: 'POST', body: credentials }),
   me: () => request('/auth/me'),
+  updateProfile: (profileData) => request('/auth/profile', { method: 'PUT', body: profileData }),
 
   // Patients
   getPatients: (search = '', patient_id = '') => {
@@ -70,9 +71,11 @@ export const api = {
   // AI Summary
   getAiSummary: (patientId, force = false) => request(`/ai/patient-summary/${patientId}?forceRegenerate=${force}`),
 
-  // Users & Admin Stats
+  // Users & Admin Management
   getUsers: () => request('/users'),
+  getUserById: (id) => request(`/users/${id}`),
   createUser: (userData) => request('/users', { method: 'POST', body: userData }),
+  updateUser: (id, userData) => request(`/users/${id}`, { method: 'PUT', body: userData }),
   getStats: () => request('/users/stats'),
 
   // Audit Logs

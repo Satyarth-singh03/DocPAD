@@ -50,7 +50,9 @@ export const login = async (req, res, next) => {
         role: user.role,
         patient_id: user.patient_id || null,
         department: user.department || null,
-        phone: user.phone || null
+        phone: user.phone || null,
+        dob: user.dob || null,
+        age: user.age || null
       }
     });
   } catch (err) {
@@ -72,7 +74,40 @@ export const me = async (req, res, next) => {
         role: user.role,
         patient_id: user.patient_id || null,
         department: user.department || null,
-        phone: user.phone || null
+        phone: user.phone || null,
+        dob: user.dob || null,
+        age: user.age || null
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateProfile = async (req, res, next) => {
+  try {
+    const { name, phone, dob, department } = req.body;
+
+    const updated = await DbService.updateUser(req.user.id, {
+      ...(name && { name }),
+      ...(phone !== undefined && { phone }),
+      ...(dob !== undefined && { dob }),
+      ...(department !== undefined && { department })
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully.',
+      user: {
+        id: updated.id,
+        email: updated.email,
+        name: updated.name,
+        role: updated.role,
+        patient_id: updated.patient_id || null,
+        department: updated.department || null,
+        phone: updated.phone || null,
+        dob: updated.dob || null,
+        age: updated.age || null
       }
     });
   } catch (err) {

@@ -2,65 +2,34 @@ import React from 'react';
 import { 
   LayoutDashboard, 
   Users, 
-  UserPlus, 
-  FileText, 
-  FileCheck, 
-  History, 
-  Sparkles, 
-  Shield, 
-  Search,
-  UserCheck
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-export const Sidebar = ({ activeTab, setActiveTab, onOpenAddPatient }) => {
+export const Sidebar = ({ 
+  activeTab, 
+  setActiveTab, 
+  onOpenAddPatient, 
+  onOpenAddDoctor, 
+  onOpenAddNurse 
+}) => {
   const { user } = useAuth();
-  if (!user) return null;
 
-  const role = user.role;
+  // Sidebar is kept ONLY for Admin role per project specifications!
+  if (!user || user.role !== 'admin') return null;
 
-  const getMenuItems = () => {
-    switch (role) {
-      case 'admin':
-        return [
-          { id: 'dashboard', label: 'Admin Dashboard', icon: LayoutDashboard },
-          { id: 'patients', label: 'Patient Directory', icon: Users },
-          { id: 'users', label: 'User Accounts', icon: UserCheck },
-          { id: 'audit', label: 'System Audit Logs', icon: Shield }
-        ];
-
-      case 'doctor':
-        return [
-          { id: 'dashboard', label: 'Doctor Dashboard', icon: LayoutDashboard },
-          { id: 'patients', label: 'My Patients', icon: Users }
-        ];
-
-      case 'nurse':
-        return [
-          { id: 'dashboard', label: 'Nurse Dashboard', icon: LayoutDashboard },
-          { id: 'patients', label: 'Patient Records', icon: Users }
-        ];
-
-      case 'patient':
-        return [
-          { id: 'dashboard', label: 'My Medical Dashboard', icon: LayoutDashboard },
-          { id: 'profile', label: 'My Full Profile', icon: Users }
-        ];
-
-      default:
-        return [];
-    }
-  };
-
-  const menuItems = getMenuItems();
+  const menuItems = [
+    { id: 'dashboard', label: 'Admin Dashboard', icon: LayoutDashboard },
+    { id: 'users', label: 'Users Directory', icon: Users }
+  ];
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)] p-4 flex flex-col justify-between">
+    <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)] p-4 flex flex-col justify-between flex-shrink-0">
       <div className="space-y-6">
-        {/* Navigation Section */}
+        {/* Navigation Menu */}
         <div>
-          <h4 className="text-[11px] font-bold text-gray-700 uppercase tracking-wider px-3 mb-2 font-mono">
-            Navigation Menu
+          <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-3 mb-2 font-mono">
+            Admin Menu
           </h4>
           <nav className="space-y-1">
             {menuItems.map((item) => {
@@ -84,28 +53,40 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenAddPatient }) => {
           </nav>
         </div>
 
-        {/* Quick Actions (Admin, Doctor, Nurse) */}
-        {role !== 'patient' && (
-          <div className="pt-4 border-t border-gray-100">
-            <h4 className="text-[11px] font-bold text-gray-700 uppercase tracking-wider px-3 mb-2 font-mono">
-              Quick Actions
-            </h4>
-            <button
-              onClick={onOpenAddPatient}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium bg-sky-100 text-sky-900 border border-sky-300 rounded-md hover:bg-sky-200 transition-colors shadow-2xs"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>+ Add New Patient</span>
-            </button>
-          </div>
-        )}
+        {/* Quick Actions (Add Patient, Add Doctor, Add Nurse) */}
+        <div className="pt-4 border-t border-gray-100 space-y-2">
+          <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-3 mb-1 font-mono">
+            Quick Actions
+          </h4>
+          <button
+            onClick={onOpenAddPatient}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold bg-black text-white rounded-md hover:bg-gray-800 transition-colors shadow-2xs"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>+ Add Patient</span>
+          </button>
+          <button
+            onClick={onOpenAddDoctor}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold bg-sky-100 text-sky-900 border border-sky-300 rounded-md hover:bg-sky-200 transition-colors shadow-2xs"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>+ Add Doctor</span>
+          </button>
+          <button
+            onClick={onOpenAddNurse}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold bg-gray-100 text-gray-800 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors shadow-2xs"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>+ Add Nurse</span>
+          </button>
+        </div>
       </div>
 
       {/* Role Footer Badge */}
       <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
         <div className="flex items-center justify-between text-xs text-gray-600">
           <span>Active Role:</span>
-          <span className="font-bold text-black uppercase font-mono">{role}</span>
+          <span className="font-bold text-black uppercase font-mono">{user.role}</span>
         </div>
       </div>
     </aside>

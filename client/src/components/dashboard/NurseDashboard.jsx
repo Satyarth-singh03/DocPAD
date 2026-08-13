@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, Plus, Search, Users, FileText, Upload } from 'lucide-react';
+import { UserCheck, Plus, Search } from 'lucide-react';
 import { api } from '../../services/api';
 import { SearchBar } from '../common/SearchBar';
 import { PatientTable } from '../patient/PatientTable';
@@ -25,16 +25,16 @@ export const NurseDashboard = ({ onSelectPatient, onOpenAddPatient }) => {
     fetchPatients();
   }, []);
 
-  if (loading) return <LoadingSpinner label="Loading Nursing Triage Dashboard..." />;
+  if (loading) return <LoadingSpinner label="Loading Nurse Dashboard..." />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-7xl mx-auto">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-sky-50 border border-sky-200 rounded-lg p-5">
         <div>
           <div className="flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-sky-900" />
-            <h1 className="text-xl font-bold text-black">Nursing Triage & Patient Care Dashboard</h1>
+            <h1 className="text-xl font-bold text-black">Nurse Dashboard</h1>
           </div>
           <p className="text-xs text-gray-700">Register new patient intake, search records, and upload diagnostic lab reports.</p>
         </div>
@@ -54,14 +54,14 @@ export const NurseDashboard = ({ onSelectPatient, onOpenAddPatient }) => {
           <Search className="w-4 h-4 text-sky-800" />
           Search Patient Record
         </h3>
-        <p className="text-xs text-gray-600">Search by Patient ID or Name to open record and upload reports.</p>
+        <p className="text-xs text-gray-600">Search by Patient ID (e.g. PT-101-01) or Name to open record.</p>
         <SearchBar onSelectPatient={onSelectPatient} />
       </div>
 
       {/* Patient Directory */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-black">Triage Patient Queue</h3>
+          <h3 className="text-base font-bold text-black">Registered Patients Directory</h3>
           <span className="text-xs font-mono text-gray-500">{patients.length} Registered Patients</span>
         </div>
 
