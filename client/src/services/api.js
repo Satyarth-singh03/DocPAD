@@ -1,4 +1,5 @@
-const BASE_URL = '/api';
+const API_HOST = import.meta.env.VITE_API_URL || '';
+const BASE_URL = `${API_HOST.replace(/\/$/, '')}/api`;
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('aidocpad_token');
@@ -24,8 +25,26 @@ async function request(endpoint, options = {}) {
     headers
   };
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, config);
-  const data = await response.json().catch(() => ({ success: false, message: 'Server returned unparseable response' }));
+  let response;
+  try {
+    response = await fetch(`${BASE_URL}${endpoint}`, config);
+  } catch (netErr) {
+    throw new Error('Unable to connect to backend server. Please check network connection or backend URL.');
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  let data;
+
+  if (contentType.includes('application/json')) {
+    data = await response.json().catch(() => ({ success: false, message: 'Server returned unparseable JSON response' }));
+  } else {
+    // Returned HTML or plain text (e.g., Vercel 404/500 page because VITE_API_URL is missing or backend is offline)
+    const text = await response.text();
+    if (!API_HOST) {
+      throw new Error('Backend URL (VITE_API_URL) is not set on Vercel. Please set VITE_API_URL in Vercel settings and redeploy.');
+    }
+    throw new Error(`Server returned unexpected content (${response.status}). Ensure your Render backend is online.`);
+  }
 
   if (!response.ok) {
     throw new Error(data.message || `Request failed with status ${response.status}`);

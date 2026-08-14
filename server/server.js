@@ -24,7 +24,15 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health Check
+// Welcome & Health Check
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'online',
+    system: 'AI DOCPAD Medical Record Management System Backend API',
+    version: '1.0.0'
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'online',
